@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
+import { Trophy } from "lucide-react"
+import Link from "next/link"
 
 export function UserProfile() {
   // Mock user data
@@ -68,7 +71,14 @@ export function UserProfile() {
             <Progress value={user.progress} className="h-2" />
           </div>
 
-          <div className="mt-6 text-sm text-muted-foreground">
+          <Link href="/rewards" className="w-full mt-4">
+            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+              <Trophy className="h-4 w-4" />
+              View Your Rewards
+            </Button>
+          </Link>
+
+          <div className="mt-4 text-sm text-muted-foreground">
             <p>Ask {11 - user.questionsCount} more questions to reach Gold status!</p>
           </div>
         </div>

@@ -2,3 +2,4 @@
 .idea/
 src/collections
 .env
+node_modules/
