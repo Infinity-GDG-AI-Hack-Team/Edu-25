@@ -3,3 +3,6 @@
 src/collections
 .env
 node_modules/
+src/__pycache__/
+src/db/__pycache__/
+src/documents/__pycache__/

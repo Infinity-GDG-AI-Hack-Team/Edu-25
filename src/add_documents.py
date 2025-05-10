@@ -3,24 +3,14 @@ from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from google import genai
+from config import GOOGLE_API_KEY
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Get MongoDB password and Google API key from environment variables
-mongodb_password = os.getenv("MONGODB_PASSWORD")
-google_api_key = os.getenv("GOOGLE_API_KEY")
-
-# MongoDB Atlas connection details
-uri = f"mongodb+srv://yuiwatanabe:{mongodb_password}@cluster0.16mwq9n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-db_name = "testdb"
-collection_name = "test4"
 
 # Function to create embedding with Gemini
 def generate_embeddings(texts):
     """Generate embeddings for a list of texts using Google's Gemini model."""
     # Initialize the genai client
-    genai_client = genai.Client(api_key=google_api_key)
+    genai_client = genai.Client(api_key=GOOGLE_API_KEY)
     
     # Generate embeddings
     embeddings = []
@@ -29,6 +19,7 @@ def generate_embeddings(texts):
             model="gemini-embedding-exp-03-07",
             contents=text
         )
+
         # Extract the values from the ContentEmbedding object
         embedding_values = result.embeddings[0].values
         embeddings.append(embedding_values)
@@ -46,6 +37,7 @@ def create_docs_with_embeddings(embeddings, data):
             "embedding": embedding,
         }
         docs.append(doc)
+
     return docs
 
 # Connect to MongoDB Atlas
