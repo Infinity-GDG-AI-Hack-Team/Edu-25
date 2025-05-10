@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from google import genai
 import pprint
 
 # Load environment variables from .env file
@@ -15,7 +15,7 @@ google_api_key = os.getenv("GOOGLE_API_KEY")
 # MongoDB Atlas connection details
 uri = f"mongodb+srv://yuiwatanabe:{mongodb_password}@cluster0.16mwq9n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 db_name = "testdb"
-collection_name = "test3"  # Changed from "test2" to "test3" to match add_documents.py
+collection_name = "test4"  # Changed from "test2" to "test3" to match add_documents.py
 
 # Connect to MongoDB Atlas
 client = MongoClient(uri, server_api=ServerApi('1'))
@@ -24,16 +24,16 @@ collection = db[collection_name]
 
 def get_embedding(text):
     """Generate embedding for a single text using Google's Gemini model."""
-    # Initialize the embedding model
-    embedding_model = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-        google_api_key=google_api_key
-    )
+    # Initialize the genai client
+    genai_client = genai.Client(api_key=google_api_key)
     
     # Generate embedding
-    embedding = embedding_model.embed_query(text)
+    result = genai_client.models.embed_content(
+        model="gemini-embedding-exp-03-07",
+        contents=text
+    )
     
-    return embedding
+    return result.embeddings[0].values
 
 # Define a function to run vector search queries
 def get_query_results(query):
