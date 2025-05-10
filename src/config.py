@@ -16,4 +16,5 @@ INDEX_PATH = os.getenv("INDEX_PATH", "faiss.index")
 
 
 GEMINI_EMB_MODEL = os.getenv("GEMINI_EMB_MODEL", "gemini-embedding-exp-03-07")
+GEMINI_CHAT_MODEL=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.0-flash-001")
 SEGMENT_SIZE = int(os.getenv("SEGMENT_SIZE", 1000))

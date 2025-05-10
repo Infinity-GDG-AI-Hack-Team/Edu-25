@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 
 class MongoDBClient:
     def __init__(self):
-        from dotenv import load_dotenv
         load_dotenv()
         self.client = MongoClient(
             os.getenv("MONGODB_URI"),
