@@ -3,3 +3,8 @@
 src/collections
 .env
 node_modules/
+.DS_Store
+# Ignore all pycache directories
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
