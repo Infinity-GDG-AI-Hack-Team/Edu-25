@@ -15,7 +15,7 @@ google_api_key = os.getenv("GOOGLE_API_KEY")
 # MongoDB Atlas connection details
 uri = f"mongodb+srv://yuiwatanabe:{mongodb_password}@cluster0.16mwq9n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 db_name = "testdb"
-collection_name = "test4"  # Changed from "test2" to "test3" to match add_documents.py
+collection_name = "documents_segments"  # Changed from "test2" to "test3" to match add_documents.py
 
 # Connect to MongoDB Atlas
 client = MongoClient(uri, server_api=ServerApi('1'))
@@ -29,7 +29,7 @@ def get_embedding(text):
     
     # Generate embedding
     result = genai_client.models.embed_content(
-        model="gemini-embedding-exp-03-07",
+        model="models/text-embedding-004",
         contents=text
     )
     
@@ -67,6 +67,6 @@ def get_query_results(query):
 if __name__ == "__main__":
     # Test the function with a sample query
     print("Running vector search for")
-    results = get_query_results("dog")
+    results = get_query_results("Machine learning")
     print("Search results:")
     pprint.pprint(results)
