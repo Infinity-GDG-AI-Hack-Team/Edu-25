@@ -8,6 +8,11 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from google import genai
 from datetime import datetime
+import sys
+
+# Add the parent directory to sys.path to import modules from src
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from vector_search import get_query_results
 
 # Load environment variables
 load_dotenv("../.env")
@@ -82,13 +87,17 @@ def save_keywords_with_embeddings(keywords):
         # Generate embedding for the keyword
         embedding = generate_embedding(keyword)
         
-        # Create document with keyword and its embedding
+        # Get the first 3 similar document segments for this keyword
+        search_results = get_query_results(keyword)
+        related_documents = search_results[:3] if search_results else []
+        
+        # Create document with keyword, its embedding, and related documents
         doc = {
-            # "_id": i,
             "keyword": keyword,
             "embedding": embedding,
             "knowledge_level": 0.0,  # How much the keyword is known from 0 to 1
-            # "timestamp": datetime.now()
+            "related_documents": related_documents,  # Store the first 3 similar documents
+            "created_at": datetime.now()
         }
         documents.append(doc)
     print(f"Documents: {documents}")

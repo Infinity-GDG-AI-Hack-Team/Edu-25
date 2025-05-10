@@ -47,12 +47,15 @@ def get_query_results(query):
                 "queryVector": query_embedding,
                 "path": "embedding",
                 "exact": True,
-                "limit": 5
+                "limit": 3
             }
         }, {
             "$project": {
                 "_id": 0,
-                "text": 1
+                "project_name": 1,
+                "file_name": 2,
+                "page_number": 3,
+                "text": 4,
             }
         }
     ]
