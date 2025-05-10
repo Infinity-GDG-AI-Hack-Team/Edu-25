@@ -1,8 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+import logging
+import os
+from dotenv import load_dotenv
 from app.routers import users
 from app.db.mongodb import get_mongo_client
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Edu-25 API")
 
@@ -37,14 +47,42 @@ async def ping():
 
 @app.on_event("startup")
 async def startup_db_client():
-    # Initialize MongoDB connection on startup
-    get_mongo_client()
+    # Initialize MongoDB connection on startup with proper error handling
+    logger.info("Starting application...")
+    try:
+        # Log MongoDB connection info but hide credentials
+        mongo_uri = os.environ.get("MONGODB_URI", "")
+        db_name = os.environ.get("MONGODB_DB_NAME", "")
+
+        if mongo_uri:
+            uri_parts = mongo_uri.split("@")
+            if len(uri_parts) > 1:
+                # Hide username and password in logs
+                masked_uri = f"...@{uri_parts[-1]}"
+                logger.info(f"Using MongoDB URI: {masked_uri}")
+            else:
+                logger.info(f"Using MongoDB URI: {mongo_uri}")
+
+        if db_name:
+            logger.info(f"Using database: {db_name}")
+
+        client = get_mongo_client()
+        if client:
+            logger.info("MongoDB connection established successfully")
+        else:
+            logger.warning("MongoDB connection failed, but server will start anyway")
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        logger.warning("Continuing startup despite errors")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     # Close MongoDB connection on shutdown
+    logger.info("Shutting down application...")
     client = get_mongo_client()
-    client.close()
+    if client:
+        client.close()
+        logger.info("MongoDB connection closed")
 
 if __name__ == "__main__":
     import uvicorn
