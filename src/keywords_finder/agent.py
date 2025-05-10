@@ -37,7 +37,7 @@ class KeywordsResponse(BaseModel):
     keywords: List[str] = Field(description="List of extracted keywords")
 
 
-def generate_embedding(text):
+def generate_embeddings(texts):
     """Generate embedding for a single text using Google's Gemini model."""
     # Initialize the genai client
     genai_client = genai.Client(api_key=google_api_key)
@@ -45,7 +45,7 @@ def generate_embedding(text):
     # Generate embedding
     result = genai_client.models.embed_content(
         model="models/text-embedding-004",
-        contents=text
+        contents=texts
     )
     
     return result.embeddings[0].values
@@ -82,14 +82,11 @@ def save_keywords_to_db(keywords_json: str) -> str:
 def save_keywords_with_embeddings(keywords):
     """Save keywords and their embeddings to MongoDB."""
     documents = []
+    embeddings = generate_embeddings(keywords)
     
-    for keyword in keywords:
-        # Generate embedding for the keyword
-        embedding = generate_embedding(keyword)
-        
+    for keyword,embedding in zip(keywords, embeddings):
         # Get the first 3 similar document segments for this keyword
-        search_results = get_query_results(keyword)
-        related_documents = search_results[:3] if search_results else []
+        related_documents = get_query_results(keyword)
         
         # Create document with keyword, its embedding, and related documents
         doc = {
