@@ -14,7 +14,7 @@ RUN poetry config virtualenvs.in-project true
 RUN poetry env use python3.12
 
 # Install dependencies
-RUN poetry install
+# RUN poetry install
 
 # Add virtualenv bin to PATH
 ENV PATH="/app/.venv/bin:$PATH"
