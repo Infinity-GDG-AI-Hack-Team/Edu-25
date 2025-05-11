@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import logging
 import os
+import importlib.util
 from dotenv import load_dotenv
 from app.routers import users, lens, testdb_router
 from app.db.mongodb import get_mongo_client
@@ -29,6 +30,14 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(lens.router)
 app.include_router(testdb_router.router)
+
+# Try to import graph_router if it exists
+try:
+    from app.routers import graph_router
+    app.include_router(graph_router.router)
+    logger.info("Successfully loaded graph_router")
+except ImportError:
+    logger.warning("graph_router module not found, specific graph endpoint not available")
 
 @app.get("/")
 async def read_root():

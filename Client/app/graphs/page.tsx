@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react"
 import * as d3 from "d3"
+import { useRouter } from "next/navigation" // Import router for navigation
 import BraynrHeader from "@/components/braynr-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CheckCircle, AlertCircle, HelpCircle, Calendar, Clock, Send, X } from "lucide-react"
+import { CheckCircle, AlertCircle, HelpCircle, Calendar, Clock, Send, X, PlusCircle } from "lucide-react" // Added PlusCircle icon
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -45,6 +46,7 @@ interface ChatMessage {
 }
 
 export default function SubjectProgressGraph() {
+    const router = useRouter() // Initialize router for navigation
     const svgRef = useRef<SVGSVGElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [chatOpen, setChatOpen] = useState(false)
@@ -605,6 +607,15 @@ export default function SubjectProgressGraph() {
                             <CardHeader>
                                 <CardTitle>Subject Relationship Graph</CardTitle>
                                 <CardDescription>Visualize your subject progress and prerequisites</CardDescription>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute top-4 right-4 flex items-center gap-2"
+                                    onClick={() => router.push("/graphs/newGraphs")}
+                                >
+                                    <PlusCircle className="h-4 w-4" />
+                                    New Graph
+                                </Button>
                             </CardHeader>
                             <CardContent className="p-0 h-[480px]" ref={containerRef}>
                                 <svg ref={svgRef} width="100%" height="100%" className="overflow-hidden" />
