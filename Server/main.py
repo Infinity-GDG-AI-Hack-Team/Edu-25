@@ -5,7 +5,7 @@ import logging
 import os
 import importlib.util
 from dotenv import load_dotenv
-from app.routers import users, lens, testdb_router
+from app.routers import users, lens, testdb_router, upload
 from app.db.mongodb import get_mongo_client
 
 # Load environment variables from .env file
@@ -30,6 +30,8 @@ app.add_middleware(
 app.include_router(users.router)
 app.include_router(lens.router)
 app.include_router(testdb_router.router)
+
+app.include_router(upload.router)
 
 # Try to import graph_router if it exists
 try:

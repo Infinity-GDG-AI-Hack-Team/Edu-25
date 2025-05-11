@@ -1,29 +1,19 @@
-import time
-
-import fitz
-from dotenv import load_dotenv
-from google import genai
-from google.genai.types import EmbedContentConfig
-
-load_dotenv()
-
-import uuid
-
-from fastapi import FastAPI, File, UploadFile, HTTPException
 import os
+import time
+import uuid
+import fitz
 import shutil
+from google import genai
 from dotenv import load_dotenv
-# from config import COLLECTIONS_DIR
-# from db.client import MongoDBClient
-# from documents.loader import ingest_pdfs
+from google.genai.types import EmbedContentConfig
+from fastapi import APIRouter, FastAPI, File, UploadFile, HTTPException
 
 from src.config import COLLECTIONS_DIR, SEGMENT_SIZE, GEMINI_EMB_MODEL, GOOGLE_API_KEY
 from src.db.client import MongoDBClient
 
 load_dotenv()
 
-app = FastAPI()
-
+router = APIRouter()
 
 def generate_student_id():
     """
@@ -33,7 +23,6 @@ def generate_student_id():
 
 
 gemini_ai_client = genai.Client(api_key=GOOGLE_API_KEY)
-
 
 def ingest_pdfs(std_id: int, project_name: str, folder_path=COLLECTIONS_DIR):
     """
@@ -94,7 +83,7 @@ def ingest_pdfs(std_id: int, project_name: str, folder_path=COLLECTIONS_DIR):
     print(f"Ingested {len(files)} files for student {std_id} in project '{project_name}'")
 
 
-@app.post("/upload_file/")
+@router.post("/upload_file/")
 async def upload_pdf(project_name: str, file: UploadFile = File(...)):
     """
     Upload a PDF file and save it to the specified project directory.
