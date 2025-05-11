@@ -26,6 +26,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { ProjectData, GraphNode, GraphLink } from "@/types/project-data"
+import { toast } from "@/components/ui/use-toast"
 
 export default function SubjectProgressGraph() {
     const svgRef = useRef(null)
@@ -44,6 +45,34 @@ export default function SubjectProgressGraph() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [jsonData, setJsonData] = useState<ProjectData | null>(null)
     const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [pdfUploaded, setPdfUploaded] = useState(false) // Track if PDF has been uploaded
+
+    // Fetch data from the API endpoint
+    const fetchGraphData = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            const response = await fetch('http://localhost:8000/testdb/specific-graph')
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}: ${response.statusText}`)
+            }
+            const data = await response.json()
+            setJsonData(data)
+            setPdfUploaded(true) // Set PDF as uploaded when data is successfully fetched
+        } catch (err) {
+            console.error('Error fetching graph data:', err)
+            setError(err instanceof Error ? err.message : 'Failed to fetch graph data')
+            toast({
+                title: "Error",
+                description: `Failed to load graph data: ${err instanceof Error ? err.message : 'Unknown error'}`,
+                variant: "destructive"
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
 
     // Convert the JSON data to our graph format
     const graphData = useMemo(() => {
@@ -135,109 +164,52 @@ export default function SubjectProgressGraph() {
     }
 
     // Handle form submission
-    const handleUploadSubmit = (e: React.FormEvent) => {
+    const handleUploadSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (!selectedFile || !projectName) return
 
-        // For demo purposes, we'll use the provided JSON data
-        // In a real app, you would parse the uploaded file
-        const sampleData: ProjectData = {
-            student_id: 11,
-            project_name: projectName,
-            files: {
-                pdf: [selectedFile.name],
-            },
-            current_active_file: selectedFile.name,
-            planning_graph: {
-                nodes_id: [
-                    "recognition_systems",
-                    "1d_signals",
-                    "semi_supervised_learning",
-                    "ml_system_design_phases",
-                    "automatic_fish_packing_classification",
-                    "bayesian_estimation",
-                    "non_parametric_estimation",
-                    "knn_estimation",
-                    "parzen_window_density_estimates",
-                    "em_algorithm",
-                    "feature_reduction",
-                    "hughes_effect",
-                    "statistical_separability_measures",
-                    "sequential_forward_backward_strategy",
-                    "pca",
-                    "lda",
-                    "supervised_classification",
-                    "bayesian_classification",
-                    "minimum_risk_theory",
-                    "discriminant_functions",
-                    "decision_trees",
-                    "confusion_matrix",
-                ],
-                nodes: [
-                    "Recognition Systems",
-                    "1-D Signals",
-                    "Semi-supervised Learning",
-                    "ML System Design Phases",
-                    "Automatic Fish-Packing Classification",
-                    "Bayesian Estimation",
-                    "Non-parametric Estimation",
-                    "K-NN Estimation",
-                    "Parzen Window Density Estimates",
-                    "EM Algorithm",
-                    "Feature Reduction",
-                    "Hughes Effect",
-                    "Statistical Separability Measures",
-                    "Sequential Forward/Backward Strategy",
-                    "Principal Component Analysis (PCA)",
-                    "Linear Discriminant Analysis (LDA)",
-                    "Supervised Classification",
-                    "Bayesian Classification",
-                    "Minimum Risk Theory",
-                    "Discriminant Functions",
-                    "Decision Trees",
-                    "Confusion Matrix",
-                ],
-                edges: [
-                    ["ml_system_design_phases", "automatic_fish_packing_classification"],
-                    ["bayesian_estimation", "em_algorithm"],
-                    ["feature_reduction", "pca"],
-                    ["feature_reduction", "lda"],
-                    ["supervised_classification", "bayesian_classification"],
-                    ["bayesian_classification", "minimum_risk_theory"],
-                    ["minimum_risk_theory", "discriminant_functions"],
-                    ["discriminant_functions", "decision_trees"],
-                ],
-                sequence: [
-                    "recognition_systems",
-                    "1d_signals",
-                    "semi_supervised_learning",
-                    "ml_system_design_phases",
-                    "automatic_fish_packing_classification",
-                    "bayesian_estimation",
-                    "non_parametric_estimation",
-                    "knn_estimation",
-                    "parzen_window_density_estimates",
-                    "em_algorithm",
-                    "feature_reduction",
-                    "hughes_effect",
-                    "statistical_separability_measures",
-                    "sequential_forward_backward_strategy",
-                    "pca",
-                    "lda",
-                    "supervised_classification",
-                    "bayesian_classification",
-                    "minimum_risk_theory",
-                    "discriminant_functions",
-                    "decision_trees",
-                    "confusion_matrix",
-                ],
-            },
-            known_topics: ["Recognition Systems", "1-D Signals"],
-        }
+        // Instead of using hardcoded sample data, fetch from the API
+        setLoading(true)
+        setError(null)
 
-        setJsonData(sampleData)
-        setUploadDialogOpen(false)
+        try {
+            const response = await fetch('http://localhost:8000/testdb/specific-graph')
+            if (!response.ok) {
+                throw new Error(`API returned ${response.status}: ${response.statusText}`)
+            }
+
+            let data = await response.json()
+
+            // Optionally, we can update some fields based on the uploaded file
+            data.project_name = projectName
+            data.current_active_file = selectedFile.name
+            if (!data.files) {
+                data.files = { pdf: [selectedFile.name] }
+            } else if (data.files.pdf) {
+                if (!data.files.pdf.includes(selectedFile.name)) {
+                    data.files.pdf.push(selectedFile.name)
+                }
+            }
+
+            setJsonData(data)
+            setPdfUploaded(true) // Set PDF as uploaded
+            toast({
+                title: "Success",
+                description: "Graph data loaded successfully!",
+            })
+        } catch (err) {
+            console.error('Error fetching graph data:', err)
+            setError(err instanceof Error ? err.message : 'Failed to fetch graph data')
+            toast({
+                title: "Error",
+                description: `Failed to load graph data: ${err instanceof Error ? err.message : 'Unknown error'}`,
+                variant: "destructive"
+            })
+        } finally {
+            setLoading(false)
+            setUploadDialogOpen(false)
+        }
     }
 
     // Handle chat input submission
@@ -442,7 +414,7 @@ export default function SubjectProgressGraph() {
 
     return (
         <>
-            <BraynrHeader /> {/* Add BraynrHeader at the top */}
+            <BraynrHeader />
             <div className="container mx-auto p-4">
                 <h1 className="text-3xl font-bold mb-6 text-center">Subject Progress Tracker</h1>
 
@@ -451,9 +423,10 @@ export default function SubjectProgressGraph() {
                     <CardHeader>
                         <CardTitle>Topic Progress & Learning Path</CardTitle>
                         <CardDescription>
-                            {jsonData
-                                ? `Project: ${jsonData.project_name} | Current PDF: ${jsonData.current_active_file}`
-                                : "Upload a PDF to start tracking your learning progress"}
+                            {loading ? "Loading graph data..." :
+                                error ? `Error: ${error}` :
+                                    jsonData ? `Project: ${jsonData.project_name} | Current PDF: ${jsonData.current_active_file}` :
+                                        "Upload a PDF to start tracking your learning progress"}
                         </CardDescription>
                         <Tabs defaultValue="all" className="w-full mt-2" onValueChange={setProgressFilter}>
                             <TabsList className="grid grid-cols-4 w-full">
@@ -465,7 +438,11 @@ export default function SubjectProgressGraph() {
                         </Tabs>
                     </CardHeader>
                     <CardContent>
-                        {graphData.nodes.length > 0 ? (
+                        {loading ? (
+                            <div className="flex justify-center items-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                            </div>
+                        ) : graphData.nodes.length > 0 ? (
                             <>
                                 <div className="space-y-4">
                                     {currentTopics.map((topic) => (
@@ -544,7 +521,9 @@ export default function SubjectProgressGraph() {
                                                 </div>
                                             </div>
                                             <DialogFooter>
-                                                <Button type="submit">Upload</Button>
+                                                <Button type="submit" disabled={loading}>
+                                                    {loading ? "Loading..." : "Upload"}
+                                                </Button>
                                             </DialogFooter>
                                         </form>
                                     </DialogContent>
@@ -562,7 +541,11 @@ export default function SubjectProgressGraph() {
                                 <CardDescription>Visualize your learning path and topic relationships</CardDescription>
                             </CardHeader>
                             <CardContent className="p-0 h-[480px]" ref={containerRef}>
-                                {graphData.nodes.length > 0 ? (
+                                {loading ? (
+                                    <div className="flex justify-center items-center h-full">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                                    </div>
+                                ) : pdfUploaded && graphData.nodes.length > 0 ? (
                                     <svg ref={svgRef} width="100%" height="100%" className="overflow-hidden" />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -586,6 +569,18 @@ export default function SubjectProgressGraph() {
                                     </Button>
                                 </div>
                             )}
+
+                            {/* Reload data button */}
+                            <div className="absolute bottom-4 left-40 z-10">
+                                <Button
+                                    variant="outline"
+                                    className="bg-blue-50 hover:bg-blue-100"
+                                    onClick={fetchGraphData}
+                                    disabled={loading}
+                                >
+                                    {loading ? "Loading..." : "Reload Data"}
+                                </Button>
+                            </div>
 
                             {/* Chatbot Avatar */}
                             <div className="absolute bottom-4 right-4 z-10">
