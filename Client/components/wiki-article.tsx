@@ -191,6 +191,9 @@ export default function WikiArticle() {
     // Track the currently active keyword
     const [activeKeyword, setActiveKeyword] = useState<string | null>(null)
 
+    // Add state for user input message
+    const [userMessage, setUserMessage] = useState("Fourier transform is a ...")
+
     // Function to cycle through colors (red -> amber -> green -> red)
     const cycleColor = () => {
         if (!activeKeyword) return
@@ -250,6 +253,124 @@ export default function WikiArticle() {
         }
     }, [activeReference, popupRef.current])
 
+    // Effect to handle lens mode activation
+    useEffect(() => {
+        const activateLensMode = async () => {
+            if (lenseMode) {
+                try {
+                    // First API call - initialize session state
+                    // Using relative URL to avoid CORS issues in browser environment
+                    const sessionResponse = await fetch("/api/apps/keywords_finder/users/u_123/sessions/s_123", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            state: {
+                                key1: "value1",
+                                key2: 42
+                            }
+                        })
+                    }).catch(error => {
+                        console.error("Network error during session initialization:", error);
+                        return { ok: false, error };
+                    });
+
+                    if (!sessionResponse.ok) {
+                        console.error("Failed to initialize lens session:", sessionResponse.error || "Unknown error");
+                        return;
+                    }
+
+                    console.log("Session initialized successfully");
+
+                    // Second API call - process the initial message
+                    const processingResponse = await fetch("/api/run", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            app_name: "keywords_finder",
+                            user_id: "u_123",
+                            session_id: "s_123",
+                            new_message: {
+                                role: "user",
+                                parts: [{
+                                    text: userMessage
+                                }]
+                            }
+                        })
+                    }).catch(error => {
+                        console.error("Network error during text processing:", error);
+                        return { ok: false, error };
+                    });
+
+                    if (!processingResponse.ok) {
+                        console.error("Failed to process text with keywords finder:", processingResponse.error || "Unknown error");
+                        return;
+                    }
+
+                    // Process the response
+                    try {
+                        const result = await processingResponse.json();
+                        console.log("Keywords processing result:", result);
+                    } catch (error) {
+                        console.error("Error parsing response JSON:", error);
+                    }
+
+                } catch (error) {
+                    console.error("Error activating lens mode:", error);
+                }
+            }
+        };
+
+        activateLensMode();
+    }, [lenseMode, userMessage]);
+
+    // Function to process a new text through the keywords finder
+    const processTextWithKeywordsFinder = async (text: string) => {
+        if (!lenseMode) return;
+
+        try {
+            const response = await fetch("/api/run", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    app_name: "keywords_finder",
+                    user_id: "u_123",
+                    session_id: "s_123",
+                    new_message: {
+                        role: "user",
+                        parts: [{
+                            text: text
+                        }]
+                    }
+                })
+            }).catch(error => {
+                console.error("Network error:", error);
+                return { ok: false, error };
+            });
+
+            if (!response.ok) {
+                console.error("Failed to process text with keywords finder:", response.error || "Unknown error");
+                return;
+            }
+
+            try {
+                const result = await response.json();
+                console.log("Text processing result:", result);
+                // Here you would update the UI with the found keywords
+            } catch (error) {
+                console.error("Error parsing response JSON:", error);
+            }
+
+        } catch (error) {
+            console.error("Error processing text:", error);
+        }
+    };
+
     // Function to handle keyword click
     const handleKeywordClick = (keywordText: string, event: React.MouseEvent) => {
         const keyword = keywordsState[keywordText]
@@ -300,10 +421,10 @@ export default function WikiArticle() {
                         <span
                             key={`${currentIndex}-${keywordText}`}
                             className={`cursor-pointer font-medium ${keywordData.color === "red"
-                                    ? "text-red-600"
-                                    : keywordData.color === "amber"
-                                        ? "text-amber-500"
-                                        : "text-green-500"
+                                ? "text-red-600"
+                                : keywordData.color === "amber"
+                                    ? "text-amber-500"
+                                    : "text-green-500"
                                 } hover:underline`}
                             onClick={(e) => handleKeywordClick(keywordText, e)}
                         >
@@ -333,6 +454,11 @@ export default function WikiArticle() {
         return result
     }
 
+    // Update the existing lenseMode toggle to use our function
+    const toggleLenseMode = (enabled: boolean) => {
+        setLenseMode(enabled);
+    };
+
     return (
         <div className="container mx-auto p-4">
             {/* Header with lense mode toggle */}
@@ -341,10 +467,31 @@ export default function WikiArticle() {
                     <h1 className="text-3xl font-bold">LLM Agent</h1>
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-muted-foreground">Lense Mode</span>
-                        <Switch checked={lenseMode} onCheckedChange={setLenseMode} aria-label="Toggle lense mode" />
+                        <Switch checked={lenseMode} onCheckedChange={toggleLenseMode} aria-label="Toggle lense mode" />
                     </div>
                 </div>
             </div>
+
+            {/* Add test input area when lens mode is active */}
+            {lenseMode && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 className="text-sm font-bold text-blue-600 mb-2">Process Text with Keywords Finder</h3>
+                    <div className="flex gap-2">
+                        <Textarea
+                            value={userMessage}
+                            onChange={(e) => setUserMessage(e.target.value)}
+                            placeholder="Enter text to process for keywords..."
+                            className="flex-grow"
+                        />
+                        <Button
+                            onClick={() => processTextWithKeywordsFinder(userMessage)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white self-end"
+                        >
+                            Process
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Main content (full width) */}
             <div className="bg-white border border-gray-300 p-6 rounded-lg shadow-sm">

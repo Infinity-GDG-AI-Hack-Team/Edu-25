@@ -30,7 +30,9 @@ export default function RewardAvatar({
   const [showPointsAnimation, setShowPointsAnimation] = useState(false)
   const [lastActivity, setLastActivity] = useState<Date | null>(null)
   const [showStreakAlert, setShowStreakAlert] = useState(false)
-  const [avatarLevel, setAvatarLevel] = useState(1) // Starting with icon_female_1.png
+  const [avatarLevel, setAvatarLevel] = useState(1) // Starting level
+  const [isFemale, setIsFemale] = useState(true) // Default to female avatar
+  const [isHovered, setIsHovered] = useState(false) // For button hover effect
 
   // Check if streak needs attention (no activity in last 20 hours in this demo)
   const streakAtRisk = lastActivity && new Date().getTime() - lastActivity.getTime() > 20 * 60 * 60 * 1000
@@ -95,11 +97,18 @@ export default function RewardAvatar({
 
   const pointsPercentage = (points / nextRewardAt) * 100
 
-  // Get the current avatar image based on level (1-5)
+  // Get the current avatar image based on gender and level (1-5)
   const getAvatarImage = () => {
     // Ensure the level stays between 1-5 range
     const safeLevel = Math.min(Math.max(avatarLevel, 1), 5)
-    return `/icon_female_${safeLevel}.png`
+    const gender = isFemale ? "female" : "male"
+    return `/icon_${gender}_${safeLevel}.png`
+  }
+
+  // Toggle gender and reset level to 1
+  const toggleGender = () => {
+    setIsFemale((prev) => !prev)
+    setAvatarLevel(1) // Reset to level 1 when changing gender
   }
 
   const addPoints = (amount: number) => {
@@ -143,6 +152,16 @@ export default function RewardAvatar({
 
   return (
     <div className="flex flex-col items-center max-w-xs mx-auto">
+      {/* Gender Toggle Button */}
+      <button
+        className={`px-6 py-2 rounded-full mb-4 ${isHovered ? "bg-cyan-400 text-gray-900" : "bg-blue-500 text-white"} transition-all duration-300`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={toggleGender}
+      >
+        Switch to {isFemale ? "Male" : "Female"} Avatar
+      </button>
+
       {/* Streak alert */}
       <AnimatePresence>
         {showStreakAlert && (
@@ -309,7 +328,7 @@ export default function RewardAvatar({
 
         {/* Level indicator */}
         <div className="mt-2 text-xs text-purple-600 font-medium">
-          Level {avatarLevel}/5
+          Level {avatarLevel}/5 • {isFemale ? "Female" : "Male"} Avatar
         </div>
       </div>
     </div>
