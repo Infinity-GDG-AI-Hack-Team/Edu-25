@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         backendFormData.append('file', file);
 
         // Use the new upload-pdf endpoint we created in the server
-        const response = await fetch(`http://localhost:8000/api/files/upload-pdf?project_name=${encodeURIComponent(projectName)}`, {
+        const response = await fetch(`http://localhost:8003/api/files/upload-pdf?project_name=${encodeURIComponent(projectName)}`, {
             method: "POST",
             body: backendFormData,
         });

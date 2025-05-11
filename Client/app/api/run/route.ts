@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         // Forward the request to the FastAPI backend
-        const response = await fetch("http://localhost:8000/run", {
+        const response = await fetch("http://localhost:8003/run", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

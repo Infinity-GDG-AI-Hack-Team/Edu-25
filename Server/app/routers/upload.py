@@ -1,17 +1,40 @@
 import os
+import sys
 import time
 import uuid
 import fitz
 import shutil
 from google import genai
 from dotenv import load_dotenv
+from pymongo.server_api import ServerApi
+from pymongo.mongo_client import MongoClient
+
 from google.genai.types import EmbedContentConfig
-from fastapi import APIRouter, FastAPI, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException
 
-from src.config import COLLECTIONS_DIR, SEGMENT_SIZE, GEMINI_EMB_MODEL, GOOGLE_API_KEY
-from src.db.client import MongoDBClient
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-load_dotenv()
+# from ...src.config import COLLECTIONS_DIR, SEGMENT_SIZE, GEMINI_EMB_MODEL, GOOGLE_API_KEY
+# from ...src.db.client import MongoDBClient
+
+
+load_dotenv("/IdeaProjects/Edu-25/src/.env")
+
+CWD = os.path.dirname(os.path.abspath(__file__))
+COLLECTIONS_DIR = os.path.join(CWD, "collections")
+
+MONGO_URI = os.getenv("MONGODB_URI")
+DB_NAME = os.getenv("MONGODB_DB_NAME")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# FAISS index parameters
+dIM = 384  # embedding dim of all-MiniLM-L6-v2
+INDEX_PATH = os.getenv("INDEX_PATH", "faiss.index")
+
+GEMINI_EMB_MODEL = os.getenv("GEMINI_EMB_MODEL", "gemini-embedding-exp-03-07")
+GEMINI_CHAT_MODEL=os.getenv("GEMINI_CHAT_MODEL", "gemini-2.0-flash-001")
+SEGMENT_SIZE = int(os.getenv("SEGMENT_SIZE", 1000))
+
 
 router = APIRouter()
 
@@ -34,8 +57,13 @@ def ingest_pdfs(std_id: int, project_name: str, folder_path=COLLECTIONS_DIR):
       folder_path: path to PDF folder
     """
     folder_path = os.path.join(folder_path, project_name)
-    db = MongoDBClient()
-    segments_col = db.select_collection("documents_segments")
+    db_client = MongoClient(
+        os.getenv("MONGODB_URI"),
+        server_api=ServerApi("1")
+    )
+    db = db_client[os.getenv("MONGODB_DB_NAME")]
+    segments_col = db["documents_segments"]
+
     files = [f for f in os.listdir(folder_path) if f.lower().endswith('.pdf')]
 
     for fname in files:
