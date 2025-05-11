@@ -1,4 +1,4 @@
-Hacklaton Education track project
+Hackathon Education track project
 
 
 # Installation
