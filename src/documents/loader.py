@@ -1,11 +1,13 @@
 import os
 import time
+import sys
 
 import fitz
 from dotenv import load_dotenv
 from google import genai
 from google.genai.types import EmbedContentConfig
 # from ..config import GEMINI_EMB_MODEL,GOOGLE_API_KEY, SEGMENT_SIZE, COLLECTIONS_DIR
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from config import GEMINI_EMB_MODEL,GOOGLE_API_KEY, SEGMENT_SIZE, COLLECTIONS_DIR
 from db.client import MongoDBClient
 
@@ -72,3 +74,5 @@ def ingest_pdfs(std_id: int, project_name: str, folder_path=COLLECTIONS_DIR):
         upsert=True
     )
     print(f"Ingested {len(files)} files for student {std_id} in project '{project_name}'")
+
+
