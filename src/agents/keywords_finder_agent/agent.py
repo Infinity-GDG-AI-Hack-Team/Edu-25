@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vector_search import get_query_results, get_known_topics
 
 # Load environment variables
-load_dotenv("../.env")
+load_dotenv("../../.env")
 
 # Get MongoDB password and Google API key from environment variables
 mongodb_password = os.getenv("MONGODB_PASSWORD")
