@@ -1,6 +1,7 @@
 import os
 import sys
 from google import genai
+import json
 from google.genai.types import HttpOptions, ModelContent, Part, UserContent
 
 from pydantic import BaseModel, Field
@@ -53,13 +54,71 @@ def generate_study_graph(std_id: int, project_name: str) -> str:
     )
     return context
 
-    response = client.models.generate_content(
-        model="gemini-2.0-chat",
-        contents=context,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": StudyGraph.schema(),
-        },
+
+def save_study_graph(std_id: int, project_name: str, graph: dict):
+    """
+    Saves the generated study graph to the database.
+    """
+    db = MongoDBClient()
+    graphs_col = db.select_collection('test1')
+    graph_data = {
+        "student_id": std_id,
+        "project_name": project_name,
+        "planning_graph": graph
+    }
+
+    # get document for the student and project
+    student_project_doc = graphs_col.find_one({
+        "student_id": std_id,
+        "project_name": project_name
+    })
+
+    # combine the graph data with the existing document
+    if student_project_doc:
+        graph_data = {**student_project_doc, **graph_data}
+
+    print("Graph data to be saved:", graph_data)
+
+    # Check if a graph already exists for this student and project by checking planning_graph field
+    existing_graph = graphs_col.find_one({
+        "student_id": std_id,
+        "project_name": project_name,
+        "planning_graph": {"$exists": True}
+    })
+
+    if existing_graph:
+        # update the existing graph of the student and project
+        graphs_col.update_one(
+            {"student_id": std_id, "project_name": project_name},
+            {"$set": graph_data}
+        )
+    else:
+        # insert new planning_graph key in the document for the student and project (append of new key in the document)
+        graphs_col.insert_one(graph_data)
+
+    print(f"Study graph saved for student {std_id} and project '{project_name}'.")
+    return True
+
+
+def get_study_graph(std_id: int, project_name: str) -> StudyGraph:
+    """
+    Retrieves the study graph for a given student and project from the database.
+    """
+    db = MongoDBClient()
+    graphs_col = db.select_collection('test1')
+    graph = graphs_col.find_one({
+        "student_id": std_id,
+        "project_name": project_name
+    })
+
+    if not graph:
+        return None
+
+    # Convert the graph data to a StudyGraph object
+    study_graph = StudyGraph(
+        nodes=graph['planning_graph']['nodes'],
+        edges=graph['planning_graph']['edges'],
+        sequence=graph['planning_graph']['sequence']
     )
 
-    return response.text
+    return study_graph
