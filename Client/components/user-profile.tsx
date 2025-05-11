@@ -9,7 +9,7 @@ export function UserProfile() {
   // Mock user data
   const user = {
     name: "Current User",
-    avatar: "/placeholder.svg?height=80&width=80",
+    avatar: "/icon_male_3.png",
     questionsCount: 7,
     answersCount: 12,
     upvotesReceived: 34,

@@ -115,3 +115,45 @@ async def get_testdb_document(document_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching document: {str(e)}"
         )
+
+# Add new endpoint specifically for the requested ObjectId
+@router.get("/specific-graph", response_model=Dict[str, Any])
+async def get_specific_graph():
+    """
+    Fetch specifically the document with ObjectId: 681f8e01efc025a0df256026
+    from test1 collection in testdb database
+    """
+    try:
+        collection = get_test_collection()
+        from bson.objectid import ObjectId
+
+        specific_id = "681f8e01efc025a0df256026"
+        try:
+            obj_id = ObjectId(specific_id)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid ObjectId format: {specific_id}"
+            )
+
+        document = collection.find_one({"_id": obj_id})
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {specific_id} not found"
+            )
+
+        # Convert ObjectId to string for JSON serialization
+        document["_id"] = str(document["_id"])
+
+        return document
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching specific document: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching document: {str(e)}"
+        )

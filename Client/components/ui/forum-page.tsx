@@ -19,7 +19,7 @@ const initialQuestions = [
     tags: ["React", "JavaScript", "Hooks"],
     author: {
       name: "Sarah Johnson",
-      avatar: "/icon_female_1.png",
+      avatar: "/placeholder.svg?height=40&width=40",
       questionsCount: 15,
       badge: "Gold",
     },
@@ -34,7 +34,7 @@ const initialQuestions = [
     tags: ["JavaScript", "ES6", "Basics"],
     author: {
       name: "Mike Chen",
-      avatar: "/icon_male_1.png",
+      avatar: "/placeholder.svg?height=40&width=40",
       questionsCount: 8,
       badge: "Silver",
     },
@@ -49,7 +49,7 @@ const initialQuestions = [
     tags: ["Next.js", "Authentication", "Web Development"],
     author: {
       name: "Alex Rivera",
-      avatar: "/icon_male_2.png",
+      avatar: "/placeholder.svg?height=40&width=40",
       questionsCount: 23,
       badge: "Platinum",
     },
@@ -64,7 +64,7 @@ const initialQuestions = [
     tags: ["CSS", "Web Design", "Responsive"],
     author: {
       name: "Jordan Taylor",
-      avatar: "/icon_female_2.png",
+      avatar: "/placeholder.svg?height=40&width=40",
       questionsCount: 5,
       badge: "Bronze",
     },
@@ -122,7 +122,7 @@ export function ForumPage() {
       createdAt: "Just now",
       author: {
         name: "Current User",
-        avatar: "/icon_male_3.png", // or /icon_female_3.png if you want to alternate or use a gender variable
+        avatar: "/placeholder.svg?height=40&width=40",
         questionsCount: 1,
         badge: "Bronze",
       },
@@ -231,9 +231,7 @@ export function ForumPage() {
         </div>
 
         <div className="md:col-span-1">
-          <UserProfile
-            avatarSrc="/icon_male_3.png"
-          />
+          <UserProfile />
 
           <div className="mt-8 p-4 border rounded-lg">
             <h3 className="font-medium mb-4">Top Contributors</h3>
