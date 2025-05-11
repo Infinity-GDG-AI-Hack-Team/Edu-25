@@ -13,6 +13,11 @@ type Reference = {
     title: string
     page: number
     description: string
+    additionalReferences?: {
+        title: string
+        page: number
+        description: string
+    }[]
 }
 
 // Define the keyword data structure
@@ -24,175 +29,38 @@ type Keyword = {
 
 export default function WikiArticle() {
     const [activeReference, setActiveReference] = useState<Reference | null>(null)
-    const [referencePosition, setReferencePosition] = useState({
-        top: 0,
-        left: 0,
-        placement: "below" as "below" | "above",
-    })
     const [lenseMode, setLenseMode] = useState(false)
     const [editingDescription, setEditingDescription] = useState(false)
     const [tempDescription, setTempDescription] = useState("")
     const popupRef = useRef<HTMLDivElement>(null)
 
+    // Add state to keep track of API-detected keywords
+    const [apiKeywords, setApiKeywords] = useState<Array<any>>([])
+
     // State to track keywords and their current colors
     const [keywordsState, setKeywordsState] = useState<Record<string, Keyword>>({
-        LLM: {
-            text: "LLM",
-            color: "red",
-            reference: {
-                title: "Large Language Models: A Comprehensive Guide",
-                page: 42,
-                description:
-                    "Large Language Models (LLMs) are advanced AI systems trained on vast amounts of text data to understand and generate human-like language.",
-            },
-        },
-        agent: {
-            text: "agent",
-            color: "amber",
-            reference: {
-                title: "Autonomous AI Systems",
-                page: 78,
-                description:
-                    "In AI, an agent is a system that can perceive its environment, make decisions, and take actions to achieve specific goals.",
-            },
-        },
-        "prompt engineering": {
-            text: "prompt engineering",
-            color: "green",
-            reference: {
-                title: "The Art of Prompting",
-                page: 103,
-                description:
-                    "The practice of designing and refining inputs to AI systems to elicit desired outputs, often involving specific techniques and strategies.",
-            },
-        },
-        "fine-tuning": {
-            text: "fine-tuning",
-            color: "red",
-            reference: {
-                title: "Advanced Model Training Techniques",
-                page: 215,
-                description:
-                    "The process of further training a pre-trained model on a specific dataset to adapt it for particular tasks or domains.",
-            },
-        },
-        "reinforcement learning": {
-            text: "reinforcement learning",
-            color: "amber",
-            reference: {
-                title: "Machine Learning Fundamentals",
-                page: 167,
-                description:
-                    "A machine learning approach where an agent learns to make decisions by taking actions in an environment to maximize cumulative rewards.",
-            },
-        },
-        "natural language processing": {
-            text: "natural language processing",
-            color: "green",
-            reference: {
-                title: "Computational Linguistics",
-                page: 89,
-                description:
-                    "The field of AI focused on enabling computers to understand, interpret, and generate human language in useful ways.",
-            },
-        },
-        "transformer architecture": {
-            text: "transformer architecture",
-            color: "red",
-            reference: {
-                title: "Neural Network Architectures",
-                page: 132,
-                description:
-                    "A neural network architecture that uses self-attention mechanisms to process sequential data, forming the foundation of modern LLMs.",
-            },
-        },
-        "chain-of-thought": {
-            text: "chain-of-thought",
-            color: "amber",
-            reference: {
-                title: "Cognitive AI Systems",
-                page: 201,
-                description:
-                    "A prompting technique that encourages LLMs to break down complex reasoning tasks into a series of intermediate steps.",
-            },
-        },
-        multimodal: {
-            text: "multimodal",
-            color: "green",
-            reference: {
-                title: "Beyond Text: Multimodal AI",
-                page: 175,
-                description:
-                    "AI systems capable of processing and generating multiple types of data, such as text, images, audio, and video.",
-            },
-        },
-        reasoning: {
-            text: "reasoning",
-            color: "red",
-            reference: {
-                title: "AI Reasoning Capabilities",
-                page: 94,
-                description:
-                    "The ability of AI systems to form logical conclusions, make inferences, and solve problems through structured thinking.",
-            },
-        },
-        "tool use": {
-            text: "tool use",
-            color: "amber",
-            reference: {
-                title: "AI Systems Integration",
-                page: 156,
-                description:
-                    "The capability of AI agents to utilize external software, APIs, or services to extend their functionality beyond their core capabilities.",
-            },
-        },
-        API: {
-            text: "API",
-            color: "green",
-            reference: {
-                title: "Application Programming Interfaces",
-                page: 63,
-                description:
-                    "A set of rules and protocols that allows different software applications to communicate with each other.",
-            },
-        },
-        "context window": {
-            text: "context window",
-            color: "red",
-            reference: {
-                title: "LLM Technical Specifications",
-                page: 118,
-                description:
-                    "The maximum amount of text an LLM can process at once, limiting how much information it can consider when generating responses.",
-            },
-        },
-        autonomous: {
-            text: "autonomous",
-            color: "amber",
-            reference: {
-                title: "Self-Directed AI Systems",
-                page: 227,
-                description:
-                    "The ability of an AI system to operate independently, making decisions and taking actions without direct human intervention.",
-            },
-        },
-        hallucination: {
-            text: "hallucination",
-            color: "green",
-            reference: {
-                title: "LLM Limitations and Challenges",
-                page: 143,
-                description:
-                    "When an AI generates information that is factually incorrect or has no basis in its training data, essentially 'making things up'.",
-            },
-        },
+        // LLM: {
+        //     text: "LLM",
+        //     color: "red",
+        //     reference: {
+        //         title: "Large Language Models: A Comprehensive Guide",
+        //         page: 42,
+        //         description:
+        //             "Large Language Models (LLMs) are advanced AI systems trained on vast amounts of text data to understand and generate human-like language.",
+        //         additionalReferences: [
+        //             {
+        //                 title: "Understanding Transformer Architecture in LLMs",
+        //                 page: 87,
+        //                 description:
+        //                     "The transformer architecture that powers LLMs uses self-attention mechanisms to process text input in parallel rather than sequentially, enabling better capture of long-range dependencies in text."
+        //             }
+        //         ]
+        //     },
+        // },
     })
 
     // Track the currently active keyword
     const [activeKeyword, setActiveKeyword] = useState<string | null>(null)
-
-    // Add state for user input message
-    const [userMessage, setUserMessage] = useState("Fourier transform is a ...")
 
     // Function to cycle through colors (red -> amber -> green -> red)
     const cycleColor = () => {
@@ -228,164 +96,108 @@ export default function WikiArticle() {
         setEditingDescription(false)
     }
 
-    // Effect to check popup position and adjust if needed
-    useEffect(() => {
-        if (popupRef.current && activeReference) {
-            const popup = popupRef.current
-            const rect = popup.getBoundingClientRect()
-
-            // Check if popup goes below viewport
-            if (rect.bottom > window.innerHeight) {
-                setReferencePosition((prev) => ({
-                    ...prev,
-                    placement: "above",
-                    top: prev.top - rect.height - 40, // Position above with some offset
-                }))
-            }
-
-            // Check if popup goes beyond right edge
-            if (rect.right > window.innerWidth) {
-                setReferencePosition((prev) => ({
-                    ...prev,
-                    left: window.innerWidth - rect.width - 20, // 20px margin from right edge
-                }))
-            }
-        }
-    }, [activeReference, popupRef.current])
-
-    // Effect to handle lens mode activation
-    useEffect(() => {
-        const activateLensMode = async () => {
-            if (lenseMode) {
-                try {
-                    // First API call - initialize session state
-                    // Using relative URL to avoid CORS issues in browser environment
-                    const sessionResponse = await fetch("/api/apps/keywords_finder/users/u_123/sessions/s_123", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            state: {
-                                key1: "value1",
-                                key2: 42
-                            }
-                        })
-                    }).catch(error => {
-                        console.error("Network error during session initialization:", error);
-                        return { ok: false, error };
-                    });
-
-                    if (!sessionResponse.ok) {
-                        console.error("Failed to initialize lens session:", sessionResponse.error || "Unknown error");
-                        return;
-                    }
-
-                    console.log("Session initialized successfully");
-
-                    // Second API call - process the initial message
-                    const processingResponse = await fetch("/api/run", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            app_name: "keywords_finder",
-                            user_id: "u_123",
-                            session_id: "s_123",
-                            new_message: {
-                                role: "user",
-                                parts: [{
-                                    text: userMessage
-                                }]
-                            }
-                        })
-                    }).catch(error => {
-                        console.error("Network error during text processing:", error);
-                        return { ok: false, error };
-                    });
-
-                    if (!processingResponse.ok) {
-                        console.error("Failed to process text with keywords finder:", processingResponse.error || "Unknown error");
-                        return;
-                    }
-
-                    // Process the response
-                    try {
-                        const result = await processingResponse.json();
-                        console.log("Keywords processing result:", result);
-                    } catch (error) {
-                        console.error("Error parsing response JSON:", error);
-                    }
-
-                } catch (error) {
-                    console.error("Error activating lens mode:", error);
-                }
-            }
-        };
-
-        activateLensMode();
-    }, [lenseMode, userMessage]);
-
     // Function to process a new text through the keywords finder
     const processTextWithKeywordsFinder = async (text: string) => {
         if (!lenseMode) return;
 
         try {
-            const response = await fetch("/api/run", {
+            console.log("Text processing:", text);
+
+            const response = await fetch("/api/keywords", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    app_name: "keywords_finder",
-                    user_id: "u_123",
-                    session_id: "s_123",
-                    new_message: {
-                        role: "user",
-                        parts: [{
-                            text: text
-                        }]
-                    }
+                    text: text
                 })
             }).catch(error => {
                 console.error("Network error:", error);
-                return { ok: false, error };
+                throw error; // Throw instead of returning custom object
             });
 
             if (!response.ok) {
-                console.error("Failed to process text with keywords finder:", response.error || "Unknown error");
+                console.error("Failed to process text with keywords finder");
                 return;
             }
 
             try {
                 const result = await response.json();
-                console.log("Text processing result:", result);
-                // Here you would update the UI with the found keywords
+                console.log("Keywords result:", result);
+                return result;
+                // The result is already formatted correctly
             } catch (error) {
-                console.error("Error parsing response JSON:", error);
+                console.log("No keywords:", error);
+                return [];
             }
 
         } catch (error) {
             console.error("Error processing text:", error);
+            return [];
         }
     };
 
+    // Function to merge API keywords with the existing keywords state
+    const getMergedKeywords = () => {
+        const mergedKeywords = { ...keywordsState };
+
+        // Add API keywords to the merged set if they exist
+        if (Array.isArray(apiKeywords) && apiKeywords.length > 0) {
+            for (let i = 0; i < apiKeywords.length; i++) {
+                const { keyword, knowledge_level, related_documents } = apiKeywords[i];
+                let color: "red" | "amber" | "green" = "red";
+                if (knowledge_level > 0.7) {
+                    color = "green";
+                } else if (knowledge_level > 0.3) {
+                    color = "amber";
+                }
+
+                // Create reference from related documents if available
+                let reference: Reference = {
+                    title: "Auto-detected keyword",
+                    page: 0,
+                    description: "This keyword was automatically detected."
+                };
+
+                // If there are related docs, use the first one for reference info
+                if (related_documents && related_documents.length > 0) {
+                    reference = {
+                        title: related_documents[0].file_name,
+                        page: related_documents[0].page_number,
+                        description: related_documents[0].text.slice(0, 300)
+                    };
+                }
+
+                // Add or update the keyword in our merged set
+                mergedKeywords[keyword] = {
+                    text: keyword,
+                    color,
+                    reference
+                };
+            }
+        }
+
+        return mergedKeywords;
+    }
+
     // Function to handle keyword click
     const handleKeywordClick = (keywordText: string, event: React.MouseEvent) => {
-        const keyword = keywordsState[keywordText]
+        // Get merged keywords using our utility function
+        const mergedKeywords = getMergedKeywords();
+
+        // Get the keyword from the merged set
+        const keyword = mergedKeywords[keywordText];
+
+        // Ensure the keyword exists before accessing its properties
+        if (!keyword) {
+            console.error(`Keyword "${keywordText}" not found in keywords state or API keywords`);
+            return;
+        }
+
         setActiveReference(keyword.reference)
         setActiveKeyword(keywordText)
         setTempDescription(keyword.reference.description)
         setEditingDescription(false)
-
-        // Calculate position for the reference popup
-        const rect = (event.target as HTMLElement).getBoundingClientRect()
-        setReferencePosition({
-            top: rect.bottom + window.scrollY,
-            left: rect.left + window.scrollX,
-            placement: "below",
-        })
     }
 
     // Function to close the reference popup
@@ -394,6 +206,29 @@ export default function WikiArticle() {
         setActiveKeyword(null)
         setEditingDescription(false)
     }
+
+    // Effect to fetch keywords when text or lense mode changes
+    useEffect(() => {
+        const updateKeywordsFromAPI = async () => {
+            if (!lenseMode) return;
+
+            const articleText = document.querySelectorAll('.text-base.leading-relaxed');
+            if (articleText.length > 0) {
+                // Combine all text from the article
+                var combinedText = Array.from(articleText)
+                    .map(element => element.textContent || '')
+                    .join(' ');
+                // Process the combined text
+                // combinedText = "n LLM agent is an autonomous or semi-autonomous system built on top of a Large Language Model (LLM) that can perform tasks, make decisions, and interact with its environment. These agents leverage the capabilities of LLMs while extending their functionality through additional components that enable goal-directed behavior. An LLM agent combines a large language model with additional components that allow it to act in pursuit of specified goals."
+                console.log("Combined text:", combinedText);
+                const keywords = await processTextWithKeywordsFinder(combinedText);
+                // updateKeywordsFromAPI();
+                setApiKeywords(keywords);
+            }
+        };
+        updateKeywordsFromAPI();
+
+    }, [lenseMode]);
 
     // Function to process text and highlight keywords
     const processText = (text: string) => {
@@ -405,8 +240,11 @@ export default function WikiArticle() {
             return text
         }
 
+        // Get merged keywords using our utility function
+        const mergedKeywords = getMergedKeywords();
+
         // Sort keywords by length (descending) to match longer phrases first
-        const sortedKeywordEntries = Object.entries(keywordsState).sort((a, b) => b[0].length - a[0].length)
+        const sortedKeywordEntries = Object.entries(mergedKeywords).sort((a, b) => b[0].length - a[0].length)
 
         while (currentIndex < text.length) {
             let matched = false
@@ -457,7 +295,144 @@ export default function WikiArticle() {
     // Update the existing lenseMode toggle to use our function
     const toggleLenseMode = (enabled: boolean) => {
         setLenseMode(enabled);
+        if (enabled) {
+            // When lense mode is enabled, process the text from the webpage
+            const articleText = document.querySelectorAll('.text-base.leading-relaxed');
+            if (articleText.length > 0) {
+                // Combine all text from the article
+                const combinedText = Array.from(articleText)
+                    .map(element => element.textContent || '')
+                    .join(' ');
+                console.log("Combined text:", combinedText);
+                // Process the combined text
+                processTextWithKeywordsFinder(combinedText);
+            }
+        }
     };
+
+    // Function to redirect to community page
+    const redirectToCommunity = () => {
+        // Use the $BROWSER environment variable to open the page in the host's default browser
+        const command = `"$BROWSER" http://localhost:3000`
+        try {
+            // Execute the command to open the browser
+            window.open('', '_blank')?.close() // Workaround for popup blocker
+            const execProcess = require('child_process').exec(command)
+            console.log('Opening forum page in browser')
+        } catch (error) {
+            console.error('Failed to open browser:', error)
+            // Fallback to the regular way if the command fails
+            window.location.href = "/app/page"
+        }
+    }
+
+    // Function to mark keyword as known (set to green)
+    const markAsKnown = () => {
+        if (!activeKeyword) return;
+
+        setKeywordsState((prev) => ({
+            ...prev,
+            [activeKeyword]: {
+                ...prev[activeKeyword],
+                color: "green",
+            },
+        }));
+    }
+
+    // Function to simulate studying a keyword and update in backend
+    const simulateStudy = async () => {
+        if (!activeKeyword) return;
+
+        try {
+            console.log("Simulating study for:", activeKeyword);
+
+            // Call the backend API to update knowledge level
+            const response = await fetch("/api/simulate-study", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    keyword: activeKeyword
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log("Study simulation result:", result);
+
+                // Get the new knowledge level from the response
+                const newLevel = result.new_level || 0.25;
+
+                // Determine color based on knowledge level
+                let newColor: "red" | "amber" | "green" = "red";
+                if (newLevel >= 0.75) {
+                    newColor = "green";
+                } else if (newLevel >= 0.5) {
+                    newColor = "amber";
+                }
+
+                console.log(`Setting color to ${newColor} based on level ${newLevel}`);
+
+                // 1. Update the keywordsState (for popup display)
+                setKeywordsState((prev) => ({
+                    ...prev,
+                    [activeKeyword]: {
+                        ...prev[activeKeyword],
+                        color: newColor,
+                    },
+                }));
+
+                // 2. Update the apiKeywords state (for text color in article)
+                setApiKeywords((prev) => {
+                    if (!Array.isArray(prev)) return prev;
+
+                    // Create a new array with the updated knowledge level
+                    return prev.map(item => {
+                        if (item.keyword === activeKeyword) {
+                            return {
+                                ...item,
+                                knowledge_level: newLevel
+                            };
+                        }
+                        return item;
+                    });
+                });
+
+                // 3. Force a re-render by toggling and restoring lense mode
+                // if (lenseMode) {
+                //     // Briefly toggle lense mode off and back on to refresh the view
+                //     setLenseMode(false);
+                //     setTimeout(() => setLenseMode(true), 50);
+                // }
+
+                // Show a success message
+                // alert(`Successfully studied "${activeKeyword}" - Knowledge level: ${newLevel}`);
+            } else {
+                console.error("Failed to simulate study:", await response.text());
+                alert("Failed to record your study progress. Please try again.");
+            }
+        } catch (error) {
+            console.error("Error simulating study:", error);
+            alert("An error occurred while recording your study progress.");
+        }
+    }
+
+    // Function to create a flashcard (placeholder)
+    const makeFlashcard = () => {
+        if (!activeKeyword || !activeReference) return;
+        console.log("Creating flashcard for:", activeKeyword);
+        // This would integrate with a flashcard system
+        alert(`Flashcard created for: ${activeKeyword}`);
+    }
+
+    // Function to create a concept map (placeholder)
+    const makeMap = () => {
+        if (!activeKeyword || !activeReference) return;
+        console.log("Creating concept map for:", activeKeyword);
+        // This would integrate with a mapping system
+        alert(`Concept map started with: ${activeKeyword}`);
+    }
 
     return (
         <div className="container mx-auto p-4">
@@ -466,32 +441,11 @@ export default function WikiArticle() {
                 <div className="flex justify-between items-center">
                     <h1 className="text-3xl font-bold">LLM Agent</h1>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Lense Mode</span>
+                        <span className="text-sm text-muted-foreground">Lens Mode</span>
                         <Switch checked={lenseMode} onCheckedChange={toggleLenseMode} aria-label="Toggle lense mode" />
                     </div>
                 </div>
             </div>
-
-            {/* Add test input area when lens mode is active */}
-            {lenseMode && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="text-sm font-bold text-blue-600 mb-2">Process Text with Keywords Finder</h3>
-                    <div className="flex gap-2">
-                        <Textarea
-                            value={userMessage}
-                            onChange={(e) => setUserMessage(e.target.value)}
-                            placeholder="Enter text to process for keywords..."
-                            className="flex-grow"
-                        />
-                        <Button
-                            onClick={() => processTextWithKeywordsFinder(userMessage)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white self-end"
-                        >
-                            Process
-                        </Button>
-                    </div>
-                </div>
-            )}
 
             {/* Main content (full width) */}
             <div className="bg-white border border-gray-300 p-6 rounded-lg shadow-sm">
@@ -644,14 +598,16 @@ export default function WikiArticle() {
                     ref={popupRef}
                     className="fixed bg-blue-50 border border-blue-200 shadow-lg p-4 rounded-lg z-50 max-w-md"
                     style={{
-                        top: referencePosition.placement === "below" ? `${referencePosition.top}px` : "auto",
-                        bottom:
-                            referencePosition.placement === "above" ? `${window.innerHeight - referencePosition.top + 40}px` : "auto",
-                        left: `${referencePosition.left}px`,
+                        top: '80px',  // Fixed distance from top
+                        right: '30px', // Fixed position on right side
+                        bottom: 'auto',
+                        left: 'auto',
+                        maxHeight: 'calc(100vh - 120px)',
+                        overflowY: 'auto'
                     }}
                 >
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-sm font-bold text-blue-600">Reference</h3>
+                        <h3 className="text-sm font-bold text-blue-600">References</h3>
                         <div className="flex gap-2">
                             <button
                                 onClick={cycleColor}
@@ -676,10 +632,12 @@ export default function WikiArticle() {
                             </button>
                         </div>
                     </div>
-                    <p className="text-sm font-medium mb-2 text-blue-600">
-                        {activeReference.title} (p. {activeReference.page})
-                    </p>
-                    <div className="border-t border-blue-200 pt-2 mt-2">
+
+                    {/* Primary reference */}
+                    <div className="border-t border-blue-200 pt-2 mt-2 mb-4">
+                        <p className="text-sm font-medium mb-2 text-blue-600">
+                            {activeReference.title} (p. {activeReference.page})
+                        </p>
                         {editingDescription ? (
                             <div className="space-y-2">
                                 <Textarea
@@ -717,6 +675,49 @@ export default function WikiArticle() {
                                 </button>
                             </div>
                         )}
+                    </div>
+
+                    {/* Secondary reference */}
+                    {activeReference.additionalReferences && activeReference.additionalReferences.length > 0 && (
+                        <div className="border-t border-blue-200 pt-2 mt-2 mb-4">
+                            <p className="text-sm font-medium mb-2 text-blue-600">
+                                {activeReference.additionalReferences[0].title} (p. {activeReference.additionalReferences[0].page})
+                            </p>
+                            <p className="text-sm text-gray-700">
+                                {activeReference.additionalReferences[0].description}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="border-t border-blue-200 pt-4 mt-2 grid grid-cols-2 gap-2">
+                        <Button
+                            onClick={makeFlashcard}
+                            variant="outline"
+                            className="bg-white hover:bg-gray-50 border-blue-200 text-blue-700"
+                        >
+                            Make Flashcard
+                        </Button>
+                        <Button
+                            onClick={makeMap}
+                            variant="outline"
+                            className="bg-white hover:bg-gray-50 border-blue-200 text-blue-700"
+                        >
+                            Make Map
+                        </Button>
+                        <Button
+                            onClick={redirectToCommunity}
+                            variant="outline"
+                            className="bg-white hover:bg-gray-50 border-blue-200 text-blue-700"
+                        >
+                            Ask a Question
+                        </Button>
+                        <Button
+                            onClick={simulateStudy}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            Simulate Study
+                        </Button>
                     </div>
                 </div>
             )}

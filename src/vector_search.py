@@ -37,12 +37,12 @@ def get_embedding(text):
     
     return result.embeddings[0].values
 
-def get_known_topics(knowledge_level_threshold: float = 0.8 ):
+def get_known_topics(knowledge_level_threshold):
     """
     Retrieves all topics (keywords) with a knowledge level greater than the specified threshold.
     
     Args:
-        knowledge_level_threshold (float): The minimum knowledge level (default: 0.8)
+        knowledge_level_threshold (float): The minimum knowledge level
         
     Returns:
         list: A list of dictionaries containing known topics and their details

@@ -1,15 +1,43 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import logging
 import os
 import importlib.util
+import sys
 from dotenv import load_dotenv
-from app.routers import users, lens, testdb_router, upload
+from app.routers import lens, testdb_router, upload
 from app.db.mongodb import get_mongo_client
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from pydantic import BaseModel
+
+# Add the parent directory to sys.path to allow imports from src
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.agents.keywords_finder_agent.agent import call_agent
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Get MongoDB password from environment variable
+mongodb_password = os.getenv("MONGODB_PASSWORD")
+
+uri = f"mongodb+srv://yuiwatanabe:{mongodb_password}@cluster0.16mwq9n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+# Create a new client and connect to the server
+mongo_client = MongoClient(uri, server_api=ServerApi('1'))
+db_name = "testdb"
+client = MongoClient(uri, server_api=ServerApi('1'))
+db = client[db_name]
+keywords_collection = db['keywords']  # Collection for storing keywords/topics
+
+app = FastAPI(title="Keywords Finder API")
+
+class TextRequest(BaseModel):
+    text: str
+
+class StudyRequest(BaseModel):
+    keyword: str
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +55,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(users.router)
+# app.include_router(users.router)
 app.include_router(lens.router)
 app.include_router(testdb_router.router)
 
@@ -87,6 +115,48 @@ async def startup_db_client():
     except Exception as e:
         logger.error(f"Error during startup: {e}")
         logger.warning("Continuing startup despite errors")
+
+
+@app.post("/keywords")
+async def extract_keywords(request: TextRequest):
+    """
+    Extract keywords from the provided text using the agent
+    """
+    try:
+        result = call_agent(request.text)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calling agent: {str(e)}")
+
+@app.post("/simulate-study")
+async def simulate_study(request: StudyRequest):
+    """
+    Simulate studying a keyword by increasing its knowledge level in the database
+    """
+    try:
+        # Connect to MongoDB
+
+        # Default to using the keywords collection
+        keyword = keywords_collection.find_one({"keyword": request.keyword})
+
+        # Find the keyword in the database        
+        current_level = keyword.get("knowledge_level", 0)
+        new_level = min(current_level + 0.25, 1.0)
+        
+        # Update the knowledge level in the database
+        result = keywords_collection.update_one(
+            {"keyword": request.keyword},
+            {"$set": {"knowledge_level": new_level}}
+        )
+        return {"success": True, "new_level": keywords_collection.find_one({"keyword": request.keyword})['knowledge_level']}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating knowledge level: {str(e)}")
+    finally:
+        # Ensure the MongoDB connection is closed
+        if 'mongo_client' in locals():
+            mongo_client.close()
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

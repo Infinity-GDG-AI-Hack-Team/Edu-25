@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { userId: string; sessionId: string } }
+    context: { params: Promise<{ userId: string; sessionId: string }> }
 ) {
     try {
-        const { userId, sessionId } = params;
+        // With Next.js App Router, we need to await the params object itself
+        const params = await context.params;
+        const userId = params.userId;
+        const sessionId = params.sessionId;
         const body = await request.json();
 
         // Forward the request to the FastAPI backend
