@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 import os
 from dotenv import load_dotenv
-from app.routers import users, lens
+from app.routers import users, lens, testdb_router
 from app.db.mongodb import get_mongo_client
 
 # Load environment variables from .env file
@@ -28,6 +28,7 @@ app.add_middleware(
 # Include routers
 app.include_router(users.router)
 app.include_router(lens.router)
+app.include_router(testdb_router.router)
 
 @app.get("/")
 async def read_root():
