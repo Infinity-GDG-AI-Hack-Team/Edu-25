@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Star, Trophy, ArrowUp, Flame, Plus, Award } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 interface RewardAvatarProps {
   studentName?: string
@@ -29,6 +30,7 @@ export default function RewardAvatar({
   const [showPointsAnimation, setShowPointsAnimation] = useState(false)
   const [lastActivity, setLastActivity] = useState<Date | null>(null)
   const [showStreakAlert, setShowStreakAlert] = useState(false)
+  const [avatarLevel, setAvatarLevel] = useState(1) // Starting with icon_female_1.png
 
   // Check if streak needs attention (no activity in last 20 hours in this demo)
   const streakAtRisk = lastActivity && new Date().getTime() - lastActivity.getTime() > 20 * 60 * 60 * 1000
@@ -93,10 +95,30 @@ export default function RewardAvatar({
 
   const pointsPercentage = (points / nextRewardAt) * 100
 
+  // Get the current avatar image based on level (1-5)
+  const getAvatarImage = () => {
+    // Ensure the level stays between 1-5 range
+    const safeLevel = Math.min(Math.max(avatarLevel, 1), 5)
+    return `/icon_female_${safeLevel}.png`
+  }
+
   const addPoints = (amount: number) => {
     setShowPointsAnimation(true)
     setTimeout(() => {
-      setPoints((prev) => prev + amount)
+      // Check if adding these points will reach or exceed the next reward
+      const newPoints = points + amount
+      if (newPoints >= nextRewardAt) {
+        // Level up the avatar
+        setAvatarLevel((current) => {
+          // Only increment if we're not already at max level
+          return current < 5 ? current + 1 : current
+        })
+
+        // Reset points for next reward cycle
+        setPoints(newPoints - nextRewardAt)
+      } else {
+        setPoints(newPoints)
+      }
       setShowPointsAnimation(false)
     }, 300)
 
@@ -161,32 +183,16 @@ export default function RewardAvatar({
       {/* Avatar and points display */}
       <div className="flex flex-col items-center">
         <div className="relative">
-          {/* Avatar */}
-          <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-purple-300">
-            <div className="relative">
-              {/* Face */}
-              <div className="w-16 h-16 bg-yellow-200 rounded-full flex items-center justify-center">
-                {/* Eyes */}
-                <div className="absolute top-4 left-3 w-3 h-4 bg-gray-800 rounded-full"></div>
-                <div className="absolute top-4 right-3 w-3 h-4 bg-gray-800 rounded-full"></div>
-                {/* Smile */}
-                <div className="absolute bottom-4 w-8 h-4 border-b-2 border-gray-800 rounded-full"></div>
-              </div>
-              {/* Hair */}
-              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-18 h-4">
-                <div className="absolute left-0 w-4 h-4 bg-purple-500 rounded-full"></div>
-                <div className="absolute left-3 -top-1 w-4 h-4 bg-purple-500 rounded-full"></div>
-                <div className="absolute left-6 w-4 h-4 bg-purple-500 rounded-full"></div>
-                <div className="absolute left-9 -top-1 w-4 h-4 bg-purple-500 rounded-full"></div>
-                <div className="absolute left-12 w-4 h-4 bg-purple-500 rounded-full"></div>
-              </div>
-              {/* Arm */}
-              <motion.div
-                className="absolute -right-6 top-6 w-6 h-2 bg-yellow-200 rounded-full origin-left"
-                animate={{ rotate: isWaving ? [0, 20, 0, 20, 0] : 0 }}
-                transition={{ duration: 1 }}
-              ></motion.div>
-            </div>
+          {/* Avatar - made more rectangular in vertical direction */}
+          <div className="w-28 h-36 bg-purple-100 rounded-2xl flex items-center justify-center overflow-hidden border-4 border-purple-300">
+            <Image
+              src={getAvatarImage()}
+              alt="Learning Buddy Avatar"
+              width={100}
+              height={130}
+              className="object-contain"
+              priority
+            />
           </div>
 
           {/* Floating stars */}
@@ -243,7 +249,15 @@ export default function RewardAvatar({
 
         <div className="mt-2 flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <Trophy className="h-4 w-4 text-yellow-500" />
+            <div className="relative w-5 h-5 flex items-center justify-center">
+              <Image
+                src={getAvatarImage()}
+                alt="Trophy"
+                width={20}
+                height={20}
+                className="object-contain"
+              />
+            </div>
             <span className="text-sm font-medium">{points} points</span>
           </div>
 
@@ -291,6 +305,11 @@ export default function RewardAvatar({
             <Star className="h-3 w-3" />
             <span>Daily Quiz</span>
           </Button>
+        </div>
+
+        {/* Level indicator */}
+        <div className="mt-2 text-xs text-purple-600 font-medium">
+          Level {avatarLevel}/5
         </div>
       </div>
     </div>

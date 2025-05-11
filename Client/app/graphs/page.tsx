@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react"
 import * as d3 from "d3"
+import BraynrHeader from "@/components/braynr-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -530,176 +531,179 @@ export default function SubjectProgressGraph() {
     }, [progressFilter])
 
     return (
-        <div className="container mx-auto p-4">
-            <h1 className="text-3xl font-bold mb-6 text-center">Subject Progress Tracker</h1>
+        <>
+            <BraynrHeader />
+            <div className="container mx-auto p-4">
+                <h1 className="text-3xl font-bold mb-6 text-center">Subject Progress Tracker</h1>
 
-            {/* Progress Bars Section */}
-            <Card className="mb-6">
-                <CardHeader>
-                    <CardTitle>Subject Progress & Deadlines</CardTitle>
-                    <CardDescription>Track your progress and upcoming exam dates</CardDescription>
-                    <Tabs defaultValue="all" className="w-full mt-2" onValueChange={setProgressFilter}>
-                        <TabsList className="grid grid-cols-4 w-full">
-                            <TabsTrigger value="all">All</TabsTrigger>
-                            <TabsTrigger value="completed">Completed</TabsTrigger>
-                            <TabsTrigger value="needs_improvement">Needs Improvement</TabsTrigger>
-                            <TabsTrigger value="not_studied">Not Studied</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        {currentSubjects.map((subject) => (
-                            <div key={subject.id} className="space-y-1">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        {getStatusIcon(subject.status)}
-                                        <span className="font-medium">{subject.name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1 text-sm">
-                                            <Clock className="h-4 w-4 text-muted-foreground" />
-                                            <span>{subject.timeNeeded}h needed</span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-sm">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            <span>Exam: {formatDate(subject.deadline)}</span>
-                                        </div>
-                                        <div className={`text-sm ${getUrgencyClass(getDaysRemaining(subject.deadline))}`}>
-                                            {getDaysRemaining(subject.deadline)} days left
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Progress value={subject.progress} className={`h-2 ${getProgressColor(subject.progress)}`} />
-                                    <span className="text-sm font-medium">{subject.progress}%</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex justify-between items-center mt-6">
-                        <div className="text-sm text-muted-foreground">
-                            Showing {indexOfFirstSubject + 1}-{Math.min(indexOfLastSubject, filteredSubjects.length)} of{" "}
-                            {filteredSubjects.length} subjects
-                        </div>
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={prevPage} disabled={currentPage === 1}>
-                                Previous
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={nextPage} disabled={currentPage === totalPages}>
-                                Next
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-4">
-                    <Card className="h-[600px] relative">
-                        <CardHeader>
-                            <CardTitle>Subject Relationship Graph</CardTitle>
-                            <CardDescription>Visualize your subject progress and prerequisites</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0 h-[480px]" ref={containerRef}>
-                            <svg ref={svgRef} width="100%" height="100%" className="overflow-hidden" />
-                        </CardContent>
-
-                        {/* Chatbot Avatar */}
-                        <div className="absolute bottom-4 right-4 z-10">
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="rounded-full h-14 w-14 bg-blue-50 shadow-lg hover:shadow-xl transition-all"
-                                onClick={() => setChatOpen(true)}
-                            >
-                                <Avatar className="h-12 w-12">
-                                    <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Study Buddy" />
-                                    <AvatarFallback className="bg-blue-200 text-blue-800">SB</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </div>
-
-                        {/* Chatbot Dialog */}
-                        {chatOpen && (
-                            <div className="absolute bottom-20 right-4 w-80 bg-white rounded-lg shadow-xl z-20 border overflow-hidden">
-                                <div className="flex items-center justify-between p-3 bg-blue-100">
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Study Buddy" />
-                                            <AvatarFallback className="bg-blue-200 text-blue-800">SB</AvatarFallback>
-                                        </Avatar>
-                                        <span className="font-medium">Study Buddy</span>
-                                    </div>
-                                    <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                <ScrollArea className="h-80 p-3">
-                                    <div className="space-y-4">
-                                        {chatMessages.map((message, index) => (
-                                            <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                                                <div
-                                                    className={`max-w-[80%] rounded-lg px-3 py-2 ${message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
-                                                        }`}
-                                                >
-                                                    {message.content}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-
-                                <form onSubmit={handleChatSubmit} className="p-3 border-t">
-                                    <div className="flex gap-2">
-                                        <Input
-                                            placeholder="Ask for help with your studies..."
-                                            value={chatInput}
-                                            onChange={(e) => setChatInput(e.target.value)}
-                                        />
-                                        <Button type="submit" size="icon" className="bg-blue-600 hover:bg-blue-700">
-                                            <Send className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-                    </Card>
-                </div>
-            </div>
-
-            <div className="mt-6">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Legend</CardTitle>
+                {/* Progress Bars Section */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle>Subject Progress & Deadlines</CardTitle>
+                        <CardDescription>Track your progress and upcoming exam dates</CardDescription>
+                        <Tabs defaultValue="all" className="w-full mt-2" onValueChange={setProgressFilter}>
+                            <TabsList className="grid grid-cols-4 w-full">
+                                <TabsTrigger value="all">All</TabsTrigger>
+                                <TabsTrigger value="completed">Completed</TabsTrigger>
+                                <TabsTrigger value="needs_improvement">Needs Improvement</TabsTrigger>
+                                <TabsTrigger value="not_studied">Not Studied</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                            <span className="text-sm">Completed</span>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {currentSubjects.map((subject) => (
+                                <div key={subject.id} className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            {getStatusIcon(subject.status)}
+                                            <span className="font-medium">{subject.name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-1 text-sm">
+                                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                                <span>{subject.timeNeeded}h needed</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-sm">
+                                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                <span>Exam: {formatDate(subject.deadline)}</span>
+                                            </div>
+                                            <div className={`text-sm ${getUrgencyClass(getDaysRemaining(subject.deadline))}`}>
+                                                {getDaysRemaining(subject.deadline)} days left
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Progress value={subject.progress} className={`h-2 ${getProgressColor(subject.progress)}`} />
+                                        <span className="text-sm font-medium">{subject.progress}%</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                            <span className="text-sm">Needs Improvement</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                            <span className="text-sm">Not Studied</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-[2px] bg-black"></div>
-                            <span className="text-sm">Prerequisite</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-6 h-[1px] bg-black dashed"></div>
-                            <span className="text-sm">Related Subject</span>
+
+                        {/* Pagination Controls */}
+                        <div className="flex justify-between items-center mt-6">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {indexOfFirstSubject + 1}-{Math.min(indexOfLastSubject, filteredSubjects.length)} of{" "}
+                                {filteredSubjects.length} subjects
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={prevPage} disabled={currentPage === 1}>
+                                    Previous
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={nextPage} disabled={currentPage === totalPages}>
+                                    Next
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div className="lg:col-span-4">
+                        <Card className="h-[600px] relative">
+                            <CardHeader>
+                                <CardTitle>Subject Relationship Graph</CardTitle>
+                                <CardDescription>Visualize your subject progress and prerequisites</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-0 h-[480px]" ref={containerRef}>
+                                <svg ref={svgRef} width="100%" height="100%" className="overflow-hidden" />
+                            </CardContent>
+
+                            {/* Chatbot Avatar */}
+                            <div className="absolute bottom-4 right-4 z-10">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="rounded-full h-14 w-14 bg-blue-50 shadow-lg hover:shadow-xl transition-all"
+                                    onClick={() => setChatOpen(true)}
+                                >
+                                    <Avatar className="h-12 w-12">
+                                        <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Study Buddy" />
+                                        <AvatarFallback className="bg-blue-200 text-blue-800">SB</AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </div>
+
+                            {/* Chatbot Dialog */}
+                            {chatOpen && (
+                                <div className="absolute bottom-20 right-4 w-80 bg-white rounded-lg shadow-xl z-20 border overflow-hidden">
+                                    <div className="flex items-center justify-between p-3 bg-blue-100">
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Study Buddy" />
+                                                <AvatarFallback className="bg-blue-200 text-blue-800">SB</AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium">Study Buddy</span>
+                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+
+                                    <ScrollArea className="h-80 p-3">
+                                        <div className="space-y-4">
+                                            {chatMessages.map((message, index) => (
+                                                <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                                                    <div
+                                                        className={`max-w-[80%] rounded-lg px-3 py-2 ${message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
+                                                            }`}
+                                                    >
+                                                        {message.content}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+
+                                    <form onSubmit={handleChatSubmit} className="p-3 border-t">
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Ask for help with your studies..."
+                                                value={chatInput}
+                                                onChange={(e) => setChatInput(e.target.value)}
+                                            />
+                                            <Button type="submit" size="icon" className="bg-blue-600 hover:bg-blue-700">
+                                                <Send className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+
+                <div className="mt-6">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">Legend</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span className="text-sm">Completed</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                                <span className="text-sm">Needs Improvement</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                                <span className="text-sm">Not Studied</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-[2px] bg-black"></div>
+                                <span className="text-sm">Prerequisite</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-[1px] bg-black dashed"></div>
+                                <span className="text-sm">Related Subject</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
+        </>
     )
 }
