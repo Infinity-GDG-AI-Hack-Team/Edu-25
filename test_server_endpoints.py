@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("test_endpoints")
 
 # Server base URL
-BASE_URL = "http://localhost:8003"
+BASE_URL = "http://localhost:8000"
 
 def test_endpoint(endpoint: str, expected_status_code: int = 200) -> Dict[str, Any]:
     """Test an endpoint and return the response data"""

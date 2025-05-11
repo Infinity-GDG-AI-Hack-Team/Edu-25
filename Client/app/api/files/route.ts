@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         };
 
         // Send to FastAPI backend
-        const response = await fetch("http://localhost:8003/api/files/upload", {
+        const response = await fetch("http://localhost:8000/api/files/upload", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         const studentId = searchParams.get('student_id');
         const projectName = searchParams.get('project_name');
 
-        let url = 'http://localhost:8003/api/files';
+        let url = 'http://localhost:8000/api/files';
 
         if (studentId) {
             url = `${url}/student/${studentId}`;

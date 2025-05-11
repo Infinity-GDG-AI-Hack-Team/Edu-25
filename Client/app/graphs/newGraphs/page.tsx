@@ -54,7 +54,7 @@ export default function SubjectProgressGraph() {
         setLoading(true)
         setError(null)
         try {
-            const response = await fetch('http://localhost:8003/testdb/specific-graph')
+            const response = await fetch('http://localhost:8000/testdb/specific-graph')
             if (!response.ok) {
                 throw new Error(`API returned ${response.status}: ${response.statusText}`)
             }
@@ -174,7 +174,7 @@ export default function SubjectProgressGraph() {
         setError(null)
 
         try {
-            const response = await fetch('http://localhost:8003/testdb/specific-graph')
+            const response = await fetch('http://localhost:8000/testdb/specific-graph')
             if (!response.ok) {
                 throw new Error(`API returned ${response.status}: ${response.statusText}`)
             }

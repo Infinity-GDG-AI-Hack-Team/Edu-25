@@ -13,7 +13,7 @@ export async function POST(
 
         // Forward the request to the FastAPI backend
         const response = await fetch(
-            `http://localhost:8003/apps/keywords_finder/users/${userId}/sessions/${sessionId}`,
+            `http://localhost:8000/apps/keywords_finder/users/${userId}/sessions/${sessionId}`,
             {
                 method: "POST",
                 headers: {
