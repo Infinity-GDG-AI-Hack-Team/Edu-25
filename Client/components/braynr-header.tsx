@@ -28,13 +28,14 @@ export default function BraynrHeader() {
             <div className="flex items-center space-x-6">
                 <Link href="/lenses" className="text-white hover:text-cyan-400 transition duration-200">Lenses</Link>
                 <Link href="/" className="text-white hover:text-cyan-400 transition duration-200">Forum</Link>
-                <button
+                <Link
+                    href="/graphs"
                     className={`px-6 py-2 rounded-full ${isHovered ? 'bg-cyan-400 text-gray-900' : 'bg-blue-500 text-white'} transition-all duration-300`}
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}
                 >
-                    Download Braynr
-                </button>
+                    Knowledge Graph
+                </Link>
             </div>
         </div>
     );
