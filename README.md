@@ -28,10 +28,8 @@ To set up the Next.js client application, navigate to the Client directory and r
 ```bash
 cd Client/
 npm install --legacy-peer-deps
-npm install -g pnpm
+npm run dev
 ```
-
-These commands will install the required dependencies for the Next.js application and install pnpm globally, which is the package manager used by the project.
 
 # Running the Complete Application
 You can use the setup_and_run.sh script to set up and run both the server and client:
