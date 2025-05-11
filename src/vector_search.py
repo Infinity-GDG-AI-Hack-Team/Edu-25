@@ -16,11 +16,13 @@ google_api_key = os.getenv("GOOGLE_API_KEY")
 uri = f"mongodb+srv://yuiwatanabe:{mongodb_password}@cluster0.16mwq9n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 db_name = "testdb"
 collection_name = "documents_segments"  # Changed from "test2" to "test3" to match add_documents.py
+keywords_collection_name = "keywords"  # Collection for storing keywords/topics
 
 # Connect to MongoDB Atlas
 client = MongoClient(uri, server_api=ServerApi('1'))
 db = client[db_name]
 collection = db[collection_name]
+keywords_collection = db[keywords_collection_name]  # Add reference to keywords collection
 
 def get_embedding(text):
     """Generate embedding for a single text using Google's Gemini model."""
@@ -34,6 +36,34 @@ def get_embedding(text):
     )
     
     return result.embeddings[0].values
+
+def get_known_topics(knowledge_level_threshold: float = 0.8 ):
+    """
+    Retrieves all topics (keywords) with a knowledge level greater than the specified threshold.
+    
+    Args:
+        knowledge_level_threshold (float): The minimum knowledge level (default: 0.8)
+        
+    Returns:
+        list: A list of dictionaries containing known topics and their details
+    """
+    query = {"knowledge_level": {"$gt": knowledge_level_threshold}}
+    
+    # Project only the fields we need
+    projection = {
+        "_id": 0,
+        "keyword": 1,
+        "knowledge_level": 1,
+        # "created_at": 1
+    }
+    
+    # Find all documents matching the query
+    results = keywords_collection.find(query, projection)
+    
+    # Convert cursor to list
+    known_topics = list(results)
+    
+    return known_topics
 
 # Define a function to run vector search queries
 def get_query_results(query):
@@ -51,7 +81,7 @@ def get_query_results(query):
             }
         }, {
             "$project": {
-                "_id": 0,
+                # "_id": 0,
                 "project_name": 1,
                 "file_name": 2,
                 "page_number": 3,
