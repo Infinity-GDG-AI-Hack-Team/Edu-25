@@ -1,36 +1,30 @@
-FROM fedora:latest
+FROM fedora:latest AS build
 
-RUN sudo dnf install -y \
-    util-linux-user \
-    git zsh xdg-desktop-portal \
-    poetry awk python3.12 nodejs
 
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:$PYTHONPATH
 WORKDIR /app
 
+RUN sudo dnf install -y \
+    util-linux-user git poetry awk python3.12 nodejs
+
 COPY pyproject.toml poetry.lock* ./
-
 RUN poetry config virtualenvs.in-project true
-
 RUN poetry env use python3.12
 
-# Install dependencies
-# RUN poetry install
-
-# Add virtualenv bin to PATH
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Now copy the rest of your app
-COPY . .
-
-# Copy .env file if it exists (will be ignored if not present in build context)
-COPY .env* ./
+# By creatign the environment with .venv we can set its PATH 
+# and avoid moving it to the workspace folder
+RUN python3.12 -m venv /app/.venv/
+ENV PATH="/app/.venv/bin:$PATH" VIRTUAL_ENV=/app/.venv/
+RUN poetry install
 
 # Expose the port
 EXPOSE 8000
 
-# Set up the entrypoint directly instead of creating a separate script
-WORKDIR /app
-ENV PYTHONPATH=/app:$PYTHONPATH
+FROM build AS prod
+
+# Now copy the rest of your app
+COPY . .
 
 # Use ENTRYPOINT to set up the environment
-ENTRYPOINT ["bash", "-c", "poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000"]
+ENTRYPOINT ["bash", "-c", "uvicorn main:app --reload --host 0.0.0.0 --port 8000"]
