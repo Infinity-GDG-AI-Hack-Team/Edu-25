@@ -16,6 +16,7 @@ import sys
 
 # Add the parent directory to sys.path to import modules from src
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# Fix the import statement to use the correct path
 from src.vector_search import get_query_results, get_known_topics
 
 # Load environment variables
@@ -55,13 +56,13 @@ def generate_embeddings(texts):
     """Generate embedding for a single text using Google's Gemini model."""
     # Initialize the genai client
     genai_client = genai.Client(api_key=google_api_key)
-    
+
     # Generate embedding
     result = genai_client.models.embed_content(
         model="models/text-embedding-004",
         contents=texts
     )
-    
+
     return [emb.values for emb in result.embeddings]
 
 
@@ -75,11 +76,11 @@ def save_keywords_to_db(keywords_json: str) -> str:
     try:
         # Parse the JSON string to get the keywords
         keywords = json.loads(keywords_json)
-        
+
         # Save keywords with embeddings to MongoDB
         saved_count = save_keywords_with_embeddings(keywords)
         # print(f"Saved {saved_count} keywords with embeddings to MongoDB")
-        
+
         # Return the original keywords with a success message
         return json.dumps({
             "success": True,
@@ -100,16 +101,16 @@ def save_keywords_with_embeddings(keywords):
     key_doc_insert = []
     all_related_documents = []
     embeddings = generate_embeddings(keywords)
-    
+
     for keyword, embedding in zip(keywords, embeddings):
         # Check if keyword already exists in the database
         existing_keyword = keywords_collection.find_one({"keyword": keyword})
-            
+
         # Get the first 3 similar document segments for this keyword
         related_documents = get_query_results(keyword)
         for doc in related_documents:
             del doc["_id"]
-        
+
         # Create document with keyword, its embedding, and related documents
         doc = {
             "keyword": keyword,
@@ -208,78 +209,37 @@ def call_agent(text):
     Helper function to call the agent with a query.
     Handles the sequential flow of the agent pipeline.
     """
+    # Ensure the session is initialized every time to avoid stale sessions
+    session_service = InMemorySessionService()
+    session = session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
+    runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
+
     content = types.Content(role='user', parts=[types.Part(text=text)])
-    
+
     # Enable debug logging
     print(f"Starting agent pipeline with input: {text[:100]}...")
-    
+
     # Get all events from the runner, including intermediate steps
     events = runner.run(user_id=USER_ID, session_id=SESSION_ID, new_message=content)
-    
+
     # Track intermediate responses for debugging
     all_responses = []
     final_response = None
-    
-    for i,event in enumerate(events):
-        # Print event type for debugging
-        # print(f"Event type: {type(event).__name__}")
-        
-        # if hasattr(event, 'agent_name'):
-        #     print(f"Processing event from agent: {event.agent_name}")
-        
-        print(f"Event author: {event.author}")
-        final_response = event.content.parts[0].function_response
-        if event.author == "save_keywords_agent" and final_response is not None:
-            # session_service.delete_session(session)
-            # session = session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID)
-            return json.loads(final_response.response["result"])["saved_count"]["result"]
-        # print("Final response: ", final_response)
-        # all_responses.append({"type": "final", "content": final_response})
-        
-        # # convert to JSON
-        # try:
-        #     json_response = json.loads(final_response)
-        #     print("JSON response: ", json_response)
-            
-        #     # Save the response to a file with indentation
-        #     save_response_to_file(json_response)
-            
-        #     # return json_response
-        # except json.JSONDecodeError as e:
-        #     print(f"JSON decode error: {e}")
-        #     response_data = {"text": final_response, "debug_info": all_responses}
-            
-        #     # Save the response to a file with indentation even if it's not valid JSON
-        #     save_response_to_file(response_data)
-            
-        #     # return response_data
 
-# def save_response_to_file(response_data, filename=None):
-#     """
-#     Save response data to a JSON file with proper indentation.
-    
-#     Args:
-#         response_data: The data to save (dict or list)
-#         filename: Optional custom filename, defaults to timestamp-based name
-    
-#     Returns:
-#         str: Path to the saved file
-#     """
-#     if filename is None:
-#         # Create a timestamp-based filename
-#         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-#         filename = f"response_{timestamp}.json"
-    
-#     # Ensure the filename has .json extension
-#     if not filename.endswith('.json'):
-#         filename += '.json'
-    
-#     # Create the full file path
-#     file_path = os.path.join(RESPONSES_DIR, filename)
-    
-#     # Write the response data to the file with indentation
-#     with open(file_path, 'w') as f:
-#         json.dump(response_data, f, indent=4)
-    
-#     print(f"Response saved to: {file_path}")
-#     return file_path
+    for i,event in enumerate(events):
+        print(f"Event author: {event.author}")
+        if hasattr(event.content.parts[0], 'function_response'):
+            final_response = event.content.parts[0].function_response
+            if event.author == "save_keywords_agent" and final_response is not None:
+                try:
+                    return json.loads(final_response.response["result"])["saved_count"]["result"]
+                except (KeyError, json.JSONDecodeError) as e:
+                    print(f"Error processing response: {e}")
+                    return {"error": str(e), "raw_response": str(final_response)}
+
+    # Return a default response if nothing was returned from the agent
+    return {"error": "No valid response from agent", "status": "failed"}
+
+
+# Make sure call_agent is properly exported when this module is imported
+__all__ = ["call_agent"]

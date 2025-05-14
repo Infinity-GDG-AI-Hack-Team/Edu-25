@@ -14,7 +14,20 @@ from pydantic import BaseModel
 
 # Add the parent directory to sys.path to allow imports from src
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.agents.keywords_finder_agent.agent import call_agent
+
+# Now try the import with the proper path
+try:
+    from src.agents.keywords_finder_agent.agent import call_agent
+except ImportError as e:
+    # Fallback if the module is not found
+    print(f"ImportError: {e}")
+    print("Trying alternative import paths...")
+    # Try different import paths if needed
+    if os.path.exists("/app/src/agents/keywords_finder_agent/agent.py"):
+        sys.path.append("/app")
+        from src.agents.keywords_finder_agent.agent import call_agent
+    else:
+        print("Could not find the agent module")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -139,17 +152,17 @@ async def simulate_study(request: StudyRequest):
         # Default to using the keywords collection
         keyword = keywords_collection.find_one({"keyword": request.keyword})
 
-        # Find the keyword in the database        
+        # Find the keyword in the database
         current_level = keyword.get("knowledge_level", 0)
         new_level = min(current_level + 0.25, 1.0)
-        
+
         # Update the knowledge level in the database
         result = keywords_collection.update_one(
             {"keyword": request.keyword},
             {"$set": {"knowledge_level": new_level}}
         )
         return {"success": True, "new_level": keywords_collection.find_one({"keyword": request.keyword})['knowledge_level']}
-            
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating knowledge level: {str(e)}")
     finally:

@@ -3,7 +3,8 @@ FROM fedora:latest
 RUN sudo dnf install -y \
     util-linux-user \
     git zsh xdg-desktop-portal \
-    poetry awk python3.12 nodejs
+    poetry awk python3.12 nodejs gcc python3-devel
+
 
 WORKDIR /app
 
